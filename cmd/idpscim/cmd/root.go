@@ -104,6 +104,7 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVarP(&cfg.SyncMethod, "sync-method", "m", config.DefaultSyncMethod, "Sync method to use [groups]")
 	rootCmd.PersistentFlags().BoolVarP(&cfg.UseSecretsManager, "use-secrets-manager", "g", config.DefaultUseSecretsManager, "use AWS Secrets Manager content or not (default false)")
+	rootCmd.PersistentFlags().BoolVar(&cfg.PreventGroupDeletion, "prevent-group-deletion", config.DefaultPreventGroupDeletion, "determines are we delete groups from AWS Identity Store or not")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -126,6 +127,7 @@ func initConfig() {
 		"aws_scim_endpoint",
 		"aws_scim_endpoint_secret_name",
 		"use_secrets_manager",
+		"prevent_group_deletion",
 	}
 	for _, e := range envVars {
 		if err := viper.BindEnv(e); err != nil {
@@ -340,7 +342,7 @@ func syncGroups() error {
 		log.Fatalf(errors.Wrap(err, "cannot create s3 repository").Error())
 	}
 
-	ss, err := core.NewSyncService(idpService, scimService, repo, core.WithIdentityProviderGroupsFilter(cfg.GWSGroupsFilter))
+	ss, err := core.NewSyncService(idpService, scimService, repo, core.WithIdentityProviderGroupsFilter(cfg.GWSGroupsFilter), core.WithSCIMGroupDeleteionPrevention(cfg.PreventGroupDeletion), core.WithSCIMUserDeleteionPrevention(cfg.PreventUserDeletion))
 	if err != nil {
 		return errors.Wrap(err, "cannot create sync service")
 	}

@@ -26,11 +26,13 @@ var (
 
 // SyncService represent the sync service and the core of the sync process
 type SyncService struct {
-	provGroupsFilter []string
-	provUsersFilter  []string
-	prov             IdentityProviderService
-	scim             SCIMService
-	repo             StateRepository
+	provGroupsFilter         []string
+	provUsersFilter          []string
+	scimPreventGroupDeletion bool
+	scimPreventUserDeletion  bool
+	prov                     IdentityProviderService
+	scim                     SCIMService
+	repo                     StateRepository
 }
 
 // NewSyncService creates a new sync service.
@@ -46,11 +48,13 @@ func NewSyncService(prov IdentityProviderService, scim SCIMService, repo StateRe
 	}
 
 	ss := &SyncService{
-		prov:             prov,
-		provGroupsFilter: []string{}, // fill in with the opts
-		provUsersFilter:  []string{}, // fill in with the opts
-		scim:             scim,
-		repo:             repo,
+		prov:                     prov,
+		provGroupsFilter:         []string{}, // fill in with the opts
+		provUsersFilter:          []string{}, // fill in with the opts
+		scimPreventUserDeletion:  false,
+		scimPreventGroupDeletion: false,
+		scim:                     scim,
+		repo:                     repo,
 	}
 
 	for _, opt := range opts {
@@ -139,6 +143,8 @@ func (ss *SyncService) SyncGroupsAndTheirMembers(ctx context.Context) error {
 			idpGroupsResult,
 			idpUsersResult,
 			idpGroupsMembersResult,
+			ss.scimPreventUserDeletion,
+			ss.scimPreventGroupDeletion,
 		)
 		if err != nil {
 			return fmt.Errorf("error doing the first sync: %w", err)
@@ -152,6 +158,8 @@ func (ss *SyncService) SyncGroupsAndTheirMembers(ctx context.Context) error {
 			idpGroupsResult,
 			idpUsersResult,
 			idpGroupsMembersResult,
+			ss.scimPreventUserDeletion,
+			ss.scimPreventGroupDeletion,
 		)
 		if err != nil {
 			return fmt.Errorf("error syncing state: %w", err)
