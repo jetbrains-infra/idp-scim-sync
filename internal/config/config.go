@@ -31,10 +31,10 @@ const (
 	DefaultGWSServiceAccountFileSecretName = "IDPSCIM_GWSServiceAccountFile"
 
 	// DefaultGWSUserEmailSecretName is the name of the secret containing the user email.
-	DefaultGWSUserEmailSecretName = "IDPSCIM_GWSUserEmail"
+	DefaultGWSUserEmailSecretName = ""
 
 	// DefaultAWSSCIMEndpointSecretName is the name of the secret containing the SCIM endpoint.
-	DefaultAWSSCIMEndpointSecretName = "IDPSCIM_SCIMEndpoint"
+	DefaultAWSSCIMEndpointSecretName = ""
 
 	// DefaultAWSSCIMAccessTokenSecretName is the name of the secret containing the SCIM access token.
 	DefaultAWSSCIMAccessTokenSecretName = "IDPSCIM_SCIMAccessToken"

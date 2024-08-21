@@ -105,6 +105,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfg.SyncMethod, "sync-method", "m", config.DefaultSyncMethod, "Sync method to use [groups]")
 	rootCmd.PersistentFlags().BoolVarP(&cfg.UseSecretsManager, "use-secrets-manager", "g", config.DefaultUseSecretsManager, "use AWS Secrets Manager content or not (default false)")
 	rootCmd.PersistentFlags().BoolVar(&cfg.PreventGroupDeletion, "prevent-group-deletion", config.DefaultPreventGroupDeletion, "determines are we delete groups from AWS Identity Store or not")
+	rootCmd.PersistentFlags().BoolVar(&cfg.PreventUserDeletion, "prevent-user-deletion", config.DefaultPreventUserDeletion, "determines are we delete users from AWS Identity Store or not")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -128,6 +129,7 @@ func initConfig() {
 		"aws_scim_endpoint_secret_name",
 		"use_secrets_manager",
 		"prevent_group_deletion",
+		"prevent_user_deletion",
 	}
 	for _, e := range envVars {
 		if err := viper.BindEnv(e); err != nil {
@@ -213,18 +215,8 @@ func getSecrets() {
 		log.Fatalf(errors.Wrap(err, "cannot create aws secrets manager service").Error())
 	}
 
-	log.WithField("name", cfg.GWSUserEmailSecretName).Debug("reading secret")
-	unwrap, err := secrets.GetSecretValue(context.Background(), cfg.GWSUserEmailSecretName)
-	if err != nil {
-		log.Fatalf(errors.Wrap(err, "cannot get secretmanager value").Error())
-	}
-	cfg.GWSUserEmail = unwrap
-	log.WithFields(
-		log.Fields{"secretARN": cfg.GWSUserEmailSecretName},
-	).Debug("read secret")
-
 	log.WithField("name", cfg.GWSServiceAccountFileSecretName).Debug("reading secret")
-	unwrap, err = secrets.GetSecretValue(context.Background(), cfg.GWSServiceAccountFileSecretName)
+	unwrap, err := secrets.GetSecretValue(context.Background(), cfg.GWSServiceAccountFileSecretName)
 	if err != nil {
 		log.Fatalf(errors.Wrap(err, "cannot get secretmanager value").Error())
 	}
@@ -232,6 +224,18 @@ func getSecrets() {
 	log.WithFields(
 		log.Fields{"secretARN": cfg.GWSServiceAccountFileSecretName},
 	).Debug("read secret")
+
+	if cfg.GWSUserEmailSecretName != "" {
+		log.WithField("name", cfg.GWSUserEmailSecretName).Debug("reading secret")
+		unwrap, err = secrets.GetSecretValue(context.Background(), cfg.GWSUserEmailSecretName)
+		if err != nil {
+			log.Fatalf(errors.Wrap(err, "cannot get secretmanager value").Error())
+		}
+		cfg.GWSUserEmail = unwrap
+		log.WithFields(
+			log.Fields{"secretARN": cfg.GWSUserEmailSecretName},
+		).Debug("read secret")
+	}
 
 	log.WithField("name", cfg.AWSSCIMAccessTokenSecretName).Debug("reading secret")
 	unwrap, err = secrets.GetSecretValue(context.Background(), cfg.AWSSCIMAccessTokenSecretName)
@@ -243,15 +247,17 @@ func getSecrets() {
 		log.Fields{"secretARN": cfg.AWSSCIMAccessTokenSecretName},
 	).Debug("read secret")
 
-	log.WithField("name", cfg.AWSSCIMEndpointSecretName).Debug("reading secret")
-	unwrap, err = secrets.GetSecretValue(context.Background(), cfg.AWSSCIMEndpointSecretName)
-	if err != nil {
-		log.Fatalf(errors.Wrap(err, "cannot get secretmanager value").Error())
+	if cfg.AWSSCIMEndpointSecretName != "" {
+		log.WithField("name", cfg.AWSSCIMEndpointSecretName).Debug("reading secret")
+		unwrap, err = secrets.GetSecretValue(context.Background(), cfg.AWSSCIMEndpointSecretName)
+		if err != nil {
+			log.Fatalf(errors.Wrap(err, "cannot get secretmanager value").Error())
+		}
+		cfg.AWSSCIMEndpoint = unwrap
+		log.WithFields(
+			log.Fields{"secretARN": cfg.AWSSCIMEndpointSecretName},
+		).Debug("read secret")
 	}
-	cfg.AWSSCIMEndpoint = unwrap
-	log.WithFields(
-		log.Fields{"secretARN": cfg.AWSSCIMEndpointSecretName},
-	).Debug("read secret")
 }
 
 func sync() error {
