@@ -22,6 +22,8 @@ Metadata:
           - MemorySize
           - Timeout
           - LogGroupRetentionDays
+          - PreventGroupDeletion
+          - PreventUserDeletion
       - Label:
           default: "State File - Configuration"
         Parameters:
@@ -30,17 +32,13 @@ Metadata:
       - Label:
           default: "Google Workspace - Credentials"
         Parameters:
-          - GWSServiceAccountFile
-          - GWSServiceAccountFileSecretName
           - GWSUserEmail
-          - GWSUserEmailSecretName
+          - GWSServiceAccountFileSecretARN
       - Label:
           default: "AWS Single Sign-On SCIM - Credentials"
         Parameters:
           - SCIMEndpoint
-          - SCIMEndpointSecretName
-          - SCIMAccessToken
-          - SCIMAccessTokenSecretName
+          - SCIMAccessTokenSecretARN
 
   AWS::ServerlessRepo::Application:
     Name: idp-scim-sync
@@ -109,55 +107,27 @@ Parameters:
       The key "file" where the state data will be stored
     Default: data/state.json
 
-  GWSServiceAccountFile:
-    Type: String
-    Description: |
-      The Google Workspace credentials file content (content of credentials.json after creates the service account: https://cloud.google.com/iam/docs/creating-managing-service-account-keys)
-    NoEcho: true
-
-  GWSServiceAccountFileSecretName:
-    Type: String
-    Description: |
-      The Google Workspace credentials file secret name
-    Default: IDPSCIM_GWSServiceAccountFile
 
   GWSUserEmail:
     Type: String
     Description: |
       The Google Workspace user email authorized on the creation creation of the service account
-    NoEcho: true
-
-  GWSUserEmailSecretName:
-    Type: String
-    Description: |
-      The Google Workspace user email secret name
-    Default: IDPSCIM_GWSUserEmail
 
   SCIMEndpoint:
     Type: String
     Description: |
       The AWS SSO SCIM Endpoint Url
       Reference: https://docs.aws.amazon.com/singlesignon/latest/userguide/provision-automatically.html
-    NoEcho: true
 
-  SCIMEndpointSecretName:
+  GWSServiceAccountFileSecretARN:
     Type: String
     Description: |
-      The AWS SSO SCIM Endpoint Url secret name
-    Default: IDPSCIM_SCIMEndpoint
+      The Google Workspace credentials file secret ARN
 
-  SCIMAccessToken:
-    Type: String
-    Description: |
-      The AWS SSO SCIM AccessToken
-      Reference: https://docs.aws.amazon.com/singlesignon/latest/userguide/provision-automatically.html
-    NoEcho: true
-
-  SCIMAccessTokenSecretName:
+  SCIMAccessTokenSecretARN:
     Type: String
     Description: |
       The AWS SSO SCIM AccessToken secret name
-    Default: IDPSCIM_SCIMAccessToken
 
   GWSGroupsFilter:
     Type: String
@@ -172,6 +142,24 @@ Parameters:
     Default: groups
     AllowedValues:
       - groups
+
+  PreventGroupDeletion:
+    Type: String
+    Description: |
+      Do not delete groups from AWS
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+
+  PreventUserDeletion:
+    Type: String
+    Description: |
+      Do not delete users from AWS
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
 
   MemorySize:
     Type: Number
@@ -239,7 +227,6 @@ Parameters:
     Type: String
     Description: |
       The Lambda function handler
-
       Reference: https://docs.aws.amazon.com/lambda/latest/dg/configuration-console.html
     Default: bootstrap
 
@@ -266,13 +253,15 @@ Resources:
           IDPSCIM_LOG_LEVEL: !Ref LogLevel
           IDPSCIM_LOG_FORMAT: !Ref LogFormat
           IDPSCIM_SYNC_METHOD: !Ref SyncMethod
+          IDPSCIM_PREVENT_GROUP_DELETION: !Ref PreventGroupDeletion
+          IDPSCIM_PREVENT_USER_DELETION: !Ref PreventUserDeletion
           IDPSCIM_AWS_S3_BUCKET_NAME: !Sub "${BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}"
           IDPSCIM_AWS_S3_BUCKET_KEY: !Ref BucketKey
           IDPSCIM_GWS_GROUPS_FILTER: !Ref GWSGroupsFilter
-          IDPSCIM_GWS_USER_EMAIL_SECRET_NAME: !Ref AWSGWSUserEmailSecret
-          IDPSCIM_GWS_SERVICE_ACCOUNT_FILE_SECRET_NAME: !Ref AWSGWSServiceAccountFileSecret
-          IDPSCIM_AWS_SCIM_ENDPOINT_SECRET_NAME: !Ref AWSSCIMEndpointSecret
-          IDPSCIM_AWS_SCIM_ACCESS_TOKEN_SECRET_NAME: !Ref AWSSCIMAccessTokenSecret
+          IDPSCIM_GWS_USER_EMAIL: !Ref GWSUserEmail
+          IDPSCIM_GWS_SERVICE_ACCOUNT_FILE_SECRET_NAME: !Ref GWSServiceAccountFileSecretARN
+          IDPSCIM_AWS_SCIM_ENDPOINT: !Ref SCIMEndpoint
+          IDPSCIM_AWS_SCIM_ACCESS_TOKEN_SECRET_NAME: !Ref SCIMAccessTokenSecretARN
       Role: !GetAtt LambdaFunctionRole.Arn
       Events:
         SyncScheduledEvent:
@@ -310,10 +299,8 @@ Resources:
                   - secretsmanager:GetResourcePolicy
                   - secretsmanager:GetSecretValue
                 Resource:
-                  - !Ref AWSGWSServiceAccountFileSecret
-                  - !Ref AWSGWSUserEmailSecret
-                  - !Ref AWSSCIMEndpointSecret
-                  - !Ref AWSSCIMAccessTokenSecret
+                  - !Ref GWSServiceAccountFileSecretARN
+                  - !Ref SCIMAccessTokenSecretARN
               - Sid: S3Policy
                 Effect: Allow
                 Action:
@@ -340,30 +327,6 @@ Resources:
                   - kms:GenerateDataKey
                 Resource:
                   - !GetAtt KMSKey.Arn
-
-  AWSGWSServiceAccountFileSecret:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Name: !Ref GWSServiceAccountFileSecretName
-      SecretString: !Ref GWSServiceAccountFile
-
-  AWSGWSUserEmailSecret:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Name: !Ref GWSUserEmailSecretName
-      SecretString: !Ref GWSUserEmail
-
-  AWSSCIMEndpointSecret:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Name: !Ref SCIMEndpointSecretName
-      SecretString: !Ref SCIMEndpoint
-
-  AWSSCIMAccessTokenSecret:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Name: !Ref SCIMAccessTokenSecretName
-      SecretString: !Ref SCIMAccessToken
 
   KMSKey:
     Type: AWS::KMS::Key

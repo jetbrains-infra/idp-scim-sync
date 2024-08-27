@@ -19,3 +19,15 @@ func WithIdentityProviderUsersFilter(filter []string) SyncServiceOption {
 		ss.provUsersFilter = filter
 	}
 }
+
+func WithSCIMGroupDeleteionPrevention(preventGroupDeletion bool) SyncServiceOption {
+	return func(ss *SyncService) {
+		ss.scimPreventGroupDeletion = preventGroupDeletion
+	}
+}
+
+func WithSCIMUserDeleteionPrevention(preventUserDeletion bool) SyncServiceOption {
+	return func(ss *SyncService) {
+		ss.scimPreventUserDeletion = preventUserDeletion
+	}
+}
