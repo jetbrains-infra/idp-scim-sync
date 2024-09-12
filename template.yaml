@@ -286,8 +286,8 @@ Resources:
             Principal:
               Service: "lambda.amazonaws.com"
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AWSXrayWriteOnlyAccess"
       Policies:
         - PolicyName: CustomLambdaPolicy
           PolicyDocument:
@@ -311,8 +311,8 @@ Resources:
                   - s3:PutObjectAcl
                   - s3:ListBucket
                 Resource:
-                  - !Sub "arn:aws:s3:::${BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}"
-                  - !Sub "arn:aws:s3:::${BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}/*"
+                  - !Sub "arn:${AWS::Partition}:s3:::${BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}"
+                  - !Sub "arn:${AWS::Partition}:s3:::${BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}/*"
               - Sid: KMSGetDataPolicy
                 Effect: Allow
                 Action:
@@ -339,7 +339,7 @@ Resources:
           - Sid: AllowIAMThisAccount
             Effect: Allow
             Principal:
-              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+              AWS: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
             Action: "kms:*"
             Resource: "*"
           - Sid: AllowAWSLambdaToRetrieveKMSKey
@@ -347,7 +347,7 @@ Resources:
             Principal:
               Service: "lambda.amazonaws.com"
               #AWS: !GetAtt LambdaFunctionRole.Arn # Fails because circular reference
-              #AWS: !Sub "arn:aws:iam::${AWS::AccountId}:role/serverless-idp-scim-sync-${AWS::AccountId}-${AWS::Region}" # Fails in runtime because the roles is not created yet
+              #AWS: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/serverless-idp-scim-sync-${AWS::AccountId}-${AWS::Region}" # Fails in runtime because the roles is not created yet
             Action:
               - kms:Encrypt
               - kms:Decrypt
@@ -380,7 +380,7 @@ Resources:
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
-              KMSMasterKeyID: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:${KMSKeyAlias}"
+              KMSMasterKeyID: !Sub "arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:${KMSKeyAlias}"
               SSEAlgorithm: "aws:kms"
             BucketKeyEnabled: true # https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-key.html
 
@@ -394,7 +394,7 @@ Resources:
           - Sid: AllowAWSLambdaFunction
             Principal:
               AWS:
-                - !Sub "arn:aws:iam::${AWS::AccountId}:role/serverless-idp-scim-sync-${AWS::AccountId}-${AWS::Region}"
+                - !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/serverless-idp-scim-sync-${AWS::AccountId}-${AWS::Region}"
             Effect: Allow
             Action:
               - s3:GetObject
