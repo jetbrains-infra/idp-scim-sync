@@ -31,16 +31,22 @@ const (
 	DefaultGWSServiceAccountFileSecretName = "IDPSCIM_GWSServiceAccountFile"
 
 	// DefaultGWSUserEmailSecretName is the name of the secret containing the user email.
-	DefaultGWSUserEmailSecretName = "IDPSCIM_GWSUserEmail"
+	DefaultGWSUserEmailSecretName = ""
 
 	// DefaultAWSSCIMEndpointSecretName is the name of the secret containing the SCIM endpoint.
-	DefaultAWSSCIMEndpointSecretName = "IDPSCIM_SCIMEndpoint"
+	DefaultAWSSCIMEndpointSecretName = ""
 
 	// DefaultAWSSCIMAccessTokenSecretName is the name of the secret containing the SCIM access token.
 	DefaultAWSSCIMAccessTokenSecretName = "IDPSCIM_SCIMAccessToken"
 
 	// DefaultUseSecretsManager determines if we will use the AWS Secrets Manager secrets or program parameter values
 	DefaultUseSecretsManager = false
+
+	// DefaultPreventGroupDeletion determines are we delete groups from AWS Identity Store or not
+	DefaultPreventGroupDeletion = false
+
+	// DefaultPreventUserDeletion determines are we delete users from AWS Identity Store or not
+	DefaultPreventUserDeletion = false
 )
 
 // Config represents the configuration of the application.
@@ -72,6 +78,12 @@ type Config struct {
 
 	// UseSecretsManager determines if we will use the AWS Secrets Manager secrets or program parameter values
 	UseSecretsManager bool `mapstructure:"use_secrets_manager" json:"use_secrets_manager" yaml:"use_secrets_manager"`
+
+	// PreventGroupDeletion determines are we delete groups from AWS Identity Store or not
+	PreventGroupDeletion bool `mapstructure:"prevent_group_deletion" json:"prevent_group_deletion", yaml:"prevent_group_deletion"`
+
+	// PreventGroupDeletion determines are we delete users from AWS Identity Store or not
+	PreventUserDeletion bool `mapstructure:"prevent_user_deletion" json:"prevent_user_deletion", yaml:"prevent_user_deletion"`
 }
 
 // New returns a new Config
@@ -90,5 +102,7 @@ func New() Config {
 		AWSSCIMEndpointSecretName:       DefaultAWSSCIMEndpointSecretName,
 		AWSSCIMAccessTokenSecretName:    DefaultAWSSCIMAccessTokenSecretName,
 		UseSecretsManager:               DefaultUseSecretsManager,
+		PreventGroupDeletion:            DefaultPreventGroupDeletion,
+		PreventUserDeletion:             DefaultPreventUserDeletion,
 	}
 }

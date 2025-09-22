@@ -17,6 +17,8 @@ func scimSync(
 	idpGroupsResult *model.GroupsResult,
 	idpUsersResult *model.UsersResult,
 	idpGroupsMembersResult *model.GroupsMembersResult,
+	preventUserDeletion bool,
+	preventGroupDeletion bool,
 ) (*model.GroupsResult, *model.UsersResult, *model.GroupsMembersResult, error) {
 	log.Warn("reconciling the SCIM data with the Identity Provider data")
 
@@ -37,6 +39,10 @@ func scimSync(
 	groupsCreate, groupsUpdate, groupsEqual, groupsDelete, err := model.GroupsOperations(idpGroupsResult, scimGroupsResult)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("error reconciling groups: %w", err)
+	}
+
+	if preventGroupDeletion {
+		groupsDelete = &model.GroupsResult{}
 	}
 
 	groupsCreated, groupsUpdated, err := reconcilingGroups(ctx, scim, groupsCreate, groupsUpdate, groupsDelete)
@@ -60,6 +66,10 @@ func scimSync(
 	usersCreate, usersUpdate, usersEqual, usersDelete, err := model.UsersOperations(idpUsersResult, scimUsersResult)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("error operating with users: %w", err)
+	}
+
+	if preventUserDeletion {
+		usersDelete = &model.UsersResult{}
 	}
 
 	usersCreated, usersUpdated, err := reconcilingUsers(ctx, scim, usersCreate, usersUpdate, usersDelete)
@@ -108,6 +118,8 @@ func stateSync(
 	idpGroupsResult *model.GroupsResult,
 	idpUsersResult *model.UsersResult,
 	idpGroupsMembersResult *model.GroupsMembersResult,
+	preventUserDeletion bool,
+	preventGroupDeletion bool,
 ) (*model.GroupsResult, *model.UsersResult, *model.GroupsMembersResult, error) {
 	var totalGroupsResult *model.GroupsResult
 	var totalUsersResult *model.UsersResult
@@ -143,6 +155,10 @@ func stateSync(
 			return nil, nil, nil, fmt.Errorf("error reconciling groups: %w", err)
 		}
 
+		if preventGroupDeletion {
+			groupsDelete = &model.GroupsResult{}
+		}
+
 		groupsCreated, groupsUpdated, err := reconcilingGroups(ctx, scim, groupsCreate, groupsUpdate, groupsDelete)
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("error reconciling groups: %w", err)
@@ -166,6 +182,10 @@ func stateSync(
 		usersCreate, usersUpdate, usersEqual, usersDelete, err := model.UsersOperations(idpUsersResult, state.Resources.Users)
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("error operating with users: %w", err)
+		}
+
+		if preventUserDeletion {
+			usersDelete = &model.UsersResult{}
 		}
 
 		usersCreated, usersUpdated, err := reconcilingUsers(ctx, scim, usersCreate, usersUpdate, usersDelete)

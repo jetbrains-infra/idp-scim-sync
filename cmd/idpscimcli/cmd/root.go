@@ -66,6 +66,7 @@ func initConfig() {
 		"gws_users_filter",
 		"aws_scim_access_token",
 		"aws_scim_endpoint",
+		"prevent_group_deletion",
 	}
 	for _, e := range envVars {
 		if err := viper.BindEnv(e); err != nil {
